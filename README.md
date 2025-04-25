@@ -3,7 +3,7 @@
 A flexible resource booking system for meeting rooms, vehicles, equipment, and various services.
 
 <p align="center">
-  <img src="https://via.placeholder.com/800x400?text=Booking+System" alt="Booking System Screenshot" width="800">
+  <img src="assets/Image/Screenshot 2568-04-25 at 13.02.46.png" alt="Booking System Screenshot" width="800">
 </p>
 
 ## Key Features
