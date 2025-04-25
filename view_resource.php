@@ -13,6 +13,21 @@ if (!isLoggedIn()) {
 // Get resource ID from URL parameter
 $resource_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
+// Get booking date from URL parameter if available
+$booking_date = isset($_GET['booking_date']) ? sanitizeInput($_GET['booking_date']) : null;
+
+// Initialize default start and end time values
+$default_start_time = '';
+$default_end_time = '';
+
+// If booking date is provided, set default start and end times
+if ($booking_date) {
+    // Set default start time to 9:00 AM on the selected date
+    $default_start_time = date('Y-m-d H:i:s', strtotime("$booking_date 09:00:00"));
+    // Set default end time to 10:00 AM on the selected date
+    $default_end_time = date('Y-m-d H:i:s', strtotime("$booking_date 10:00:00"));
+}
+
 // Initialize managers
 $resourceManager = new ResourceManager();
 $bookingManager = new BookingManager();
@@ -47,6 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_booking'])) {
     
     if (empty($start_time) || empty($end_time)) {
         $errors[] = "Start and end times are required.";
+    }
+    
+    // Check if booking is in the past
+    if (!empty($start_time) && strtotime($start_time) < time()) {
+        $errors[] = "Cannot create bookings in the past. Please select a future date and time.";
     }
     
     // If no errors, create booking
@@ -148,12 +168,12 @@ include 'includes/header.php';
                         
                         <div class="mb-4">
                             <label for="start_time" class="block text-sm font-medium text-gray-700">Start Time</label>
-                            <input type="text" name="start_time" id="start_time" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md datetime-picker" required>
+                            <input type="text" name="start_time" id="start_time" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md datetime-picker" value="<?php echo $default_start_time; ?>" required>
                         </div>
                         
                         <div class="mb-4">
                             <label for="end_time" class="block text-sm font-medium text-gray-700">End Time</label>
-                            <input type="text" name="end_time" id="end_time" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md datetime-picker" required>
+                            <input type="text" name="end_time" id="end_time" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md datetime-picker" value="<?php echo $default_end_time; ?>" required>
                         </div>
                         
                         <div class="mb-4">
@@ -264,6 +284,46 @@ include 'includes/header.php';
                     minDate: today,
                     minuteIncrement: 15
                 });
+            });
+        }
+        
+        // Add form validation
+        const bookingForm = document.querySelector('form[method="POST"]');
+        if (bookingForm) {
+            bookingForm.addEventListener('submit', function(event) {
+                const startTimeInput = document.getElementById('start_time');
+                const endTimeInput = document.getElementById('end_time');
+                const titleInput = document.getElementById('title');
+                
+                if (!startTimeInput || !endTimeInput || !titleInput) return;
+                
+                if (!titleInput.value.trim()) {
+                    event.preventDefault();
+                    alert('Please enter a booking title.');
+                    return;
+                }
+                
+                if (!startTimeInput.value || !endTimeInput.value) {
+                    event.preventDefault();
+                    alert('Start and end times are required.');
+                    return;
+                }
+                
+                const startTime = new Date(startTimeInput.value);
+                const endTime = new Date(endTimeInput.value);
+                const now = new Date();
+                
+                if (startTime < now) {
+                    event.preventDefault();
+                    alert('Cannot create bookings in the past. Please select a future date and time.');
+                    return;
+                }
+                
+                if (startTime >= endTime) {
+                    event.preventDefault();
+                    alert('End time must be after start time.');
+                    return;
+                }
             });
         }
     });

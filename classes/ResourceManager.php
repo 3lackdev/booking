@@ -294,7 +294,16 @@ class ResourceManager {
     }
     
     /**
-     * Check if resource is available for booking
+     * Get all resources without filtering
+     * 
+     * @return array
+     */
+    public function getAllResources() {
+        return $this->getResources();
+    }
+    
+    /**
+     * Check if resource is available for a time period
      * 
      * @param int $resource_id
      * @param string $start_time

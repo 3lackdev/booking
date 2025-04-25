@@ -186,6 +186,11 @@ $admin_path = $is_admin_section ? '' : 'admin/';
                                 My Bookings
                             </a>
                             
+                            <a href="<?php echo $base_path; ?>calendar_view.php" 
+                               class="<?php echo $active_page == 'calendar' ? 'bg-white/20 text-white' : 'text-white hover:bg-white/10'; ?> px-3 py-2 rounded-md text-sm font-medium">
+                                Calendar
+                            </a>
+                            
                             <?php if (isAdmin()): ?>
                                 <a href="<?php echo $admin_path; ?>dashboard.php" 
                                    class="<?php echo $is_admin_section ? 'bg-white/20 text-white' : 'text-white hover:bg-white/10'; ?> px-3 py-2 rounded-md text-sm font-medium">
@@ -276,6 +281,11 @@ $admin_path = $is_admin_section ? '' : 'admin/';
                     <a href="<?php echo $base_path; ?>my_bookings.php" 
                        class="<?php echo $active_page == 'my_bookings' ? 'bg-white/20 text-white' : 'text-white hover:bg-white/10'; ?> block px-3 py-2 rounded-md text-base font-medium">
                         <i class="fas fa-calendar-check mr-2"></i> My Bookings
+                    </a>
+                    
+                    <a href="<?php echo $base_path; ?>calendar_view.php" 
+                       class="<?php echo $active_page == 'calendar' ? 'bg-white/20 text-white' : 'text-white hover:bg-white/10'; ?> block px-3 py-2 rounded-md text-base font-medium">
+                        <i class="fas fa-calendar-alt mr-2"></i> Calendar
                     </a>
                     
                     <?php if (isAdmin()): ?>

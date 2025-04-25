@@ -12,6 +12,9 @@ if (!isLoggedIn()) {
 // Get category filter from URL parameter
 $category_id = isset($_GET['category_id']) ? (int)$_GET['category_id'] : null;
 
+// Get booking date if present
+$booking_date = isset($_GET['booking_date']) ? sanitizeInput($_GET['booking_date']) : null;
+
 // Initialize resource manager
 $resourceManager = new ResourceManager();
 
@@ -96,7 +99,7 @@ include 'includes/header.php';
                             <?php endif; ?>
                             
                             <div class="mt-4">
-                                <a href="view_resource.php?id=<?php echo $resource['id']; ?>" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <a href="view_resource.php?id=<?php echo $resource['id']; ?><?php echo $booking_date ? '&booking_date=' . urlencode($booking_date) : ''; ?>" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                     View Details
                                 </a>
                             </div>
