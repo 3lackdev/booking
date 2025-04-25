@@ -35,6 +35,23 @@
             mobileMenu.classList.toggle('hidden');
         });
         
+        // User menu toggle
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userMenuDropdown = document.getElementById('user-menu-dropdown');
+        
+        if (userMenuButton && userMenuDropdown) {
+            userMenuButton.addEventListener('click', () => {
+                userMenuDropdown.classList.toggle('hidden');
+            });
+            
+            // ปิดเมนูเมื่อคลิกที่ส่วนอื่นของเพจ
+            document.addEventListener('click', (event) => {
+                if (!userMenuButton.contains(event.target) && !userMenuDropdown.contains(event.target)) {
+                    userMenuDropdown.classList.add('hidden');
+                }
+            });
+        }
+        
         // Initialize datetime pickers
         document.addEventListener('DOMContentLoaded', function() {
             const dateInputs = document.querySelectorAll('.date-picker');

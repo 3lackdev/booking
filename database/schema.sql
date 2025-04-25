@@ -54,9 +54,18 @@ CREATE TABLE IF NOT EXISTS bookings (
     FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE
 );
 
+-- Settings table
+CREATE TABLE IF NOT EXISTS settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(50) NOT NULL UNIQUE,
+    setting_value TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- Insert default admin user (password: admin123)
 INSERT INTO users (username, password, email, full_name, role) 
-VALUES ('admin', '$2y$10$8Y4mQB2TKhXeYUplOsXfPeEzI5roldxUvE3g6gYn1YpA1Yv9SFNB.', 'admin@example.com', 'System Administrator', 'admin');
+VALUES ('admin', '$2y$10$uyo/Advn0F5.LAppmjxgLOBLFgZgbrTywADAx2cM5uvtpJIYraSGG', 'admin@example.com', 'System Administrator', 'admin');
 
 -- Insert default resource categories
 INSERT INTO resource_categories (name, description) VALUES 
@@ -70,4 +79,15 @@ INSERT INTO resources (category_id, name, description, location, capacity) VALUE
 (1, 'Meeting Room B', 'Small meeting room with whiteboard', 'Building A, Floor 1', 6),
 (2, 'Toyota Camry', 'Company sedan, white color', 'Parking Lot B', 5),
 (2, 'Ford Transit', 'Company van for larger groups', 'Parking Lot B', 8),
-(3, 'Projector XD200', 'Portable projector with HDMI support', 'Storage Room 101', NULL); 
+(3, 'Projector XD200', 'Portable projector with HDMI support', 'Storage Room 101', NULL);
+
+-- Insert default settings
+INSERT INTO settings (setting_key, setting_value) VALUES
+('site_name', 'Booking System'),
+('site_description', 'Resource booking management system'),
+('contact_email', 'admin@example.com'),
+('booking_approval_required', '1'),
+('max_booking_days_ahead', '30'),
+('max_booking_duration_hours', '8'),
+('notification_emails_enabled', '1'),
+('cancellation_policy', 'Bookings can be cancelled up to 24 hours before the scheduled time.'); 

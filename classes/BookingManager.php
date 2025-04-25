@@ -65,7 +65,8 @@ class BookingManager {
         $sql = "SELECT b.*, 
                 r.name AS resource_name, 
                 c.name AS category_name, 
-                u.full_name AS user_name 
+                u.full_name AS user_name,
+                u.username AS username
                 FROM bookings b
                 JOIN resources r ON b.resource_id = r.id
                 JOIN resource_categories c ON r.category_id = c.id
@@ -95,7 +96,8 @@ class BookingManager {
         $sql = "SELECT b.*, 
                 r.name AS resource_name, 
                 c.name AS category_name, 
-                u.full_name AS user_name 
+                u.full_name AS user_name, 
+                u.username AS username
                 FROM bookings b
                 JOIN resources r ON b.resource_id = r.id
                 JOIN resource_categories c ON r.category_id = c.id

@@ -23,7 +23,13 @@ function getDbConnection() {
 
 // Close database connection
 function closeDbConnection($conn) {
-    if ($conn) {
-        $conn->close();
+    // Only try to close if it's a valid object
+    if ($conn && is_object($conn)) {
+        try {
+            // Suppress warnings with @ operator
+            @$conn->close();
+        } catch (Throwable $e) {
+            // Silently catch any errors - connection likely already closed
+        }
     }
 } 

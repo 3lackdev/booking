@@ -1,6 +1,46 @@
 <?php
 require_once 'includes/auth.php';
 require_once 'includes/utilities.php';
+
+// Check if database is accessible, if not redirect to setup
+function checkDatabaseConnection() {
+    // Try connecting to the database
+    try {
+        $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+        
+        // Check for connection errors
+        if ($conn->connect_error) {
+            return false;
+        }
+        
+        // Check if essential tables exist
+        $tables = ['users', 'resources', 'resource_categories', 'bookings', 'settings'];
+        foreach ($tables as $table) {
+            $result = $conn->query("SHOW TABLES LIKE '$table'");
+            if ($result->num_rows == 0) {
+                $conn->close();
+                return false;
+            }
+        }
+        
+        $conn->close();
+        return true;
+    } catch (Throwable $e) {
+        // Any exception means database connection failed
+        return false;
+    }
+}
+
+// Redirect to setup if database is not accessible
+if (!checkDatabaseConnection()) {
+    // Check if setup.php exists
+    if (file_exists('setup.php')) {
+        redirect('setup.php');
+    } else {
+        die('Database connection failed and setup file not found. Please check your database configuration or contact the administrator.');
+    }
+}
+
 require_once 'classes/ResourceManager.php';
 require_once 'classes/BookingManager.php';
 
