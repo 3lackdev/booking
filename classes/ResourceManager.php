@@ -191,9 +191,10 @@ class ResourceManager {
      * @param string $description
      * @param string $location
      * @param int|null $capacity
+     * @param string|null $image_path
      * @return bool|string
      */
-    public function addResource($category_id, $name, $description, $location, $capacity = null) {
+    public function addResource($category_id, $name, $description, $location, $capacity = null, $image_path = null) {
         $category_id = (int) $category_id;
         $name = $this->conn->real_escape_string($name);
         $description = $this->conn->real_escape_string($description);
@@ -205,8 +206,14 @@ class ResourceManager {
             $capacity = "NULL";
         }
         
-        $sql = "INSERT INTO resources (category_id, name, description, location, capacity) 
-                VALUES ($category_id, '$name', '$description', '$location', $capacity)";
+        if ($image_path !== null) {
+            $image_path = "'" . $this->conn->real_escape_string($image_path) . "'";
+        } else {
+            $image_path = "NULL";
+        }
+        
+        $sql = "INSERT INTO resources (category_id, name, description, location, capacity, image_path) 
+                VALUES ($category_id, '$name', '$description', '$location', $capacity, $image_path)";
         
         if ($this->conn->query($sql) === TRUE) {
             return true;
@@ -225,9 +232,10 @@ class ResourceManager {
      * @param string $location
      * @param int|null $capacity
      * @param string $status
+     * @param string|null $image_path
      * @return bool|string
      */
-    public function updateResource($id, $category_id, $name, $description, $location, $capacity = null, $status = 'available') {
+    public function updateResource($id, $category_id, $name, $description, $location, $capacity = null, $status = 'available', $image_path = null) {
         $id = (int) $id;
         $category_id = (int) $category_id;
         $name = $this->conn->real_escape_string($name);
@@ -241,14 +249,24 @@ class ResourceManager {
             $capacity = "NULL";
         }
         
-        $sql = "UPDATE resources SET 
-                category_id = $category_id, 
-                name = '$name', 
-                description = '$description', 
-                location = '$location', 
-                capacity = $capacity, 
-                status = '$status' 
-                WHERE id = $id";
+        // Build the SQL query parts
+        $sql_parts = [
+            "category_id = $category_id",
+            "name = '$name'",
+            "description = '$description'",
+            "location = '$location'",
+            "capacity = $capacity",
+            "status = '$status'"
+        ];
+        
+        // Add image_path if provided
+        if ($image_path !== null) {
+            $image_path = $this->conn->real_escape_string($image_path);
+            $sql_parts[] = "image_path = '$image_path'";
+        }
+        
+        // Construct the full SQL query
+        $sql = "UPDATE resources SET " . implode(", ", $sql_parts) . " WHERE id = $id";
                 
         if ($this->conn->query($sql) === TRUE) {
             return true;

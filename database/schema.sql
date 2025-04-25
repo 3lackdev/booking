@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS resources (
     description TEXT,
     location VARCHAR(100),
     capacity INT,
+    image_path VARCHAR(255) DEFAULT NULL,
     status ENUM('available', 'maintenance', 'inactive') DEFAULT 'available',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

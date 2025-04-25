@@ -67,63 +67,36 @@ include 'includes/header.php';
                 <p>There are no resources available in this category.</p>
             </div>
         <?php else: ?>
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <?php foreach ($resources as $resource): ?>
                     <div class="bg-white overflow-hidden shadow-md rounded-lg">
+                        <div class="h-48 bg-gray-200 overflow-hidden">
+                            <?php if (!empty($resource['image_path'])): ?>
+                                <img class="w-full h-full object-cover" src="<?php echo $resource['image_path']; ?>" alt="<?php echo $resource['name']; ?>">
+                            <?php else: ?>
+                                <div class="w-full h-full flex items-center justify-center">
+                                    <i class="fas fa-image text-gray-400 text-4xl"></i>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                         <div class="p-6">
-                            <div class="flex justify-between items-start">
-                                <h3 class="text-lg font-medium text-gray-900"><?php echo $resource['name']; ?></h3>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                    <?php
-                                    switch ($resource['status']) {
-                                        case 'available':
-                                            echo 'bg-green-100 text-green-800';
-                                            break;
-                                        case 'maintenance':
-                                            echo 'bg-yellow-100 text-yellow-800';
-                                            break;
-                                        case 'inactive':
-                                            echo 'bg-red-100 text-red-800';
-                                            break;
-                                        default:
-                                            echo 'bg-gray-100 text-gray-800';
-                                    }
-                                    ?>
-                                ">
-                                    <?php echo ucfirst($resource['status']); ?>
-                                </span>
-                            </div>
-                            <p class="text-sm text-gray-500 mt-1"><?php echo $resource['category_name']; ?></p>
-                            <p class="mt-3 text-gray-600"><?php echo $resource['description']; ?></p>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2"><?php echo $resource['name']; ?></h3>
+                            <p class="text-sm text-gray-500 mb-2"><?php echo $resource['category_name']; ?></p>
                             
-                            <div class="mt-4 text-sm text-gray-500">
-                                <?php if ($resource['location']): ?>
-                                    <p>
-                                        <span class="font-medium">Location:</span> 
-                                        <?php echo $resource['location']; ?>
-                                    </p>
-                                <?php endif; ?>
-                                
-                                <?php if ($resource['capacity']): ?>
-                                    <p>
-                                        <span class="font-medium">Capacity:</span> 
-                                        <?php echo $resource['capacity']; ?> people
-                                    </p>
-                                <?php endif; ?>
-                            </div>
+                            <?php if ($resource['location']): ?>
+                                <p class="text-sm text-gray-600 mb-1">
+                                    <i class="fas fa-map-marker-alt mr-1"></i> <?php echo $resource['location']; ?>
+                                </p>
+                            <?php endif; ?>
                             
-                            <div class="mt-6">
-                                <?php if ($resource['status'] == 'available'): ?>
-                                    <a href="book_resource.php?resource_id=<?php echo $resource['id']; ?>" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                        Book Now
-                                    </a>
-                                <?php else: ?>
-                                    <button disabled class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-400 cursor-not-allowed">
-                                        Not Available
-                                    </button>
-                                <?php endif; ?>
-                                
-                                <a href="view_resource.php?id=<?php echo $resource['id']; ?>" class="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <?php if ($resource['capacity']): ?>
+                                <p class="text-sm text-gray-600 mb-1">
+                                    <i class="fas fa-users mr-1"></i> Capacity: <?php echo $resource['capacity']; ?>
+                                </p>
+                            <?php endif; ?>
+                            
+                            <div class="mt-4">
+                                <a href="view_resource.php?id=<?php echo $resource['id']; ?>" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                     View Details
                                 </a>
                             </div>

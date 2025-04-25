@@ -29,6 +29,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_resource'])) {
     $location = sanitizeInput($_POST['location'] ?? '');
     $capacity = !empty($_POST['capacity']) ? (int)$_POST['capacity'] : null;
     
+    // Handle image upload
+    $image_path = null;
+    if (isset($_FILES['image']) && $_FILES['image']['error'] != UPLOAD_ERR_NO_FILE) {
+        $upload_result = handleResourceImageUpload($_FILES['image']);
+        if ($upload_result && !isset($upload_result['error'])) {
+            $image_path = $upload_result['path'];
+        } elseif (isset($upload_result['error'])) {
+            setFlashMessage($upload_result['error'], "error");
+            redirect('resources.php');
+        }
+    }
+    
     // Validate input
     $errors = [];
     if (empty($name)) {
@@ -41,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_resource'])) {
     
     // If no validation errors, attempt to add resource
     if (empty($errors)) {
-        $result = $resourceManager->addResource($category_id, $name, $description, $location, $capacity);
+        $result = $resourceManager->addResource($category_id, $name, $description, $location, $capacity, $image_path);
         
         if ($result === true) {
             setFlashMessage("Resource added successfully.", "success");
@@ -64,6 +76,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_resource'])) {
     $capacity = !empty($_POST['capacity']) ? (int)$_POST['capacity'] : null;
     $status = sanitizeInput($_POST['status'] ?? 'available');
     
+    // Handle image upload
+    $image_path = null;
+    if (isset($_FILES['image']) && $_FILES['image']['error'] != UPLOAD_ERR_NO_FILE) {
+        $upload_result = handleResourceImageUpload($_FILES['image']);
+        if ($upload_result && !isset($upload_result['error'])) {
+            $image_path = $upload_result['path'];
+            
+            // If there's an existing image, get the current resource to find and delete old image
+            $current_resource = $resourceManager->getResourceById($id);
+            if ($current_resource && !empty($current_resource['image_path'])) {
+                $old_image_path = __DIR__ . '/../' . $current_resource['image_path'];
+                if (file_exists($old_image_path)) {
+                    unlink($old_image_path);
+                }
+            }
+        } elseif (isset($upload_result['error'])) {
+            setFlashMessage($upload_result['error'], "error");
+            redirect('resources.php');
+        }
+    }
+    
     // Validate input
     $errors = [];
     if (empty($name)) {
@@ -76,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_resource'])) {
     
     // If no validation errors, attempt to update resource
     if (empty($errors)) {
-        $result = $resourceManager->updateResource($id, $category_id, $name, $description, $location, $capacity, $status);
+        $result = $resourceManager->updateResource($id, $category_id, $name, $description, $location, $capacity, $status, $image_path);
         
         if ($result === true) {
             setFlashMessage("Resource updated successfully.", "success");
@@ -120,7 +153,7 @@ include '../includes/header.php';
         <div class="bg-white overflow-hidden shadow-md rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Resource</h3>
             
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <div class="mb-4">
                     <label for="category_id" class="block text-sm font-medium text-gray-700">Category</label>
                     <select name="category_id" id="category_id" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
@@ -149,6 +182,12 @@ include '../includes/header.php';
                 <div class="mb-4">
                     <label for="capacity" class="block text-sm font-medium text-gray-700">Capacity (if applicable)</label>
                     <input type="number" name="capacity" id="capacity" min="1" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="image" class="block text-sm font-medium text-gray-700">Resource Image</label>
+                    <input type="file" name="image" id="image" accept="image/*" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    <p class="mt-1 text-xs text-gray-500">Supported formats: JPG, PNG, GIF, WEBP. Max size: 5MB.</p>
                 </div>
                 
                 <div>
@@ -187,7 +226,7 @@ include '../includes/header.php';
                     <thead class="bg-gray-50">
                         <tr>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Name
+                                Resource
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Category
@@ -207,10 +246,23 @@ include '../includes/header.php';
                         <?php foreach ($resources as $resource): ?>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900"><?php echo $resource['name']; ?></div>
-                                    <?php if ($resource['capacity']): ?>
-                                        <div class="text-xs text-gray-500">Capacity: <?php echo $resource['capacity']; ?></div>
-                                    <?php endif; ?>
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <?php if (!empty($resource['image_path'])): ?>
+                                                <img class="h-10 w-10 rounded-full object-cover" src="<?php echo '../' . $resource['image_path']; ?>" alt="<?php echo $resource['name']; ?>">
+                                            <?php else: ?>
+                                                <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                                    <i class="fas fa-image text-gray-400"></i>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900"><?php echo $resource['name']; ?></div>
+                                            <?php if ($resource['capacity']): ?>
+                                                <div class="text-xs text-gray-500">Capacity: <?php echo $resource['capacity']; ?></div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900"><?php echo $resource['category_name']; ?></div>
@@ -239,7 +291,7 @@ include '../includes/header.php';
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button type="button" class="text-blue-600 hover:text-blue-900 mr-3" 
-                                            onclick="openEditModal(<?php echo $resource['id']; ?>, <?php echo $resource['category_id']; ?>, '<?php echo addslashes($resource['name']); ?>', '<?php echo addslashes($resource['description']); ?>', '<?php echo addslashes($resource['location']); ?>', <?php echo $resource['capacity'] ? $resource['capacity'] : 'null'; ?>, '<?php echo $resource['status']; ?>')">
+                                            onclick="openEditModal(<?php echo $resource['id']; ?>, <?php echo $resource['category_id']; ?>, '<?php echo addslashes($resource['name']); ?>', '<?php echo addslashes($resource['description']); ?>', '<?php echo addslashes($resource['location']); ?>', <?php echo $resource['capacity'] ? $resource['capacity'] : 'null'; ?>, '<?php echo $resource['status']; ?>', '<?php echo addslashes($resource['image_path'] ?? ''); ?>')">
                                         Edit
                                     </button>
                                     
@@ -260,17 +312,16 @@ include '../includes/header.php';
 </div>
 
 <!-- Edit Resource Modal -->
-<div id="editModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center hidden z-50">
-    <div class="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
-        <form method="POST">
-            <input type="hidden" name="id" id="edit_id">
-            
-            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Resource</h3>
+<div id="editResourceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Edit Resource</h3>
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="id" id="edit-id">
                 
                 <div class="mb-4">
-                    <label for="edit_category_id" class="block text-sm font-medium text-gray-700">Category</label>
-                    <select name="category_id" id="edit_category_id" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <label for="edit-category_id" class="block text-sm font-medium text-gray-700 text-left">Category</label>
+                    <select name="category_id" id="edit-category_id" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                         <?php foreach ($categories as $category): ?>
                             <option value="<?php echo $category['id']; ?>"><?php echo $category['name']; ?></option>
                         <?php endforeach; ?>
@@ -278,69 +329,97 @@ include '../includes/header.php';
                 </div>
                 
                 <div class="mb-4">
-                    <label for="edit_name" class="block text-sm font-medium text-gray-700">Resource Name</label>
-                    <input type="text" name="name" id="edit_name" required class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    <label for="edit-name" class="block text-sm font-medium text-gray-700 text-left">Resource Name</label>
+                    <input type="text" name="name" id="edit-name" required class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                 </div>
                 
                 <div class="mb-4">
-                    <label for="edit_description" class="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea name="description" id="edit_description" rows="3" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"></textarea>
+                    <label for="edit-description" class="block text-sm font-medium text-gray-700 text-left">Description</label>
+                    <textarea name="description" id="edit-description" rows="3" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"></textarea>
                 </div>
                 
                 <div class="mb-4">
-                    <label for="edit_location" class="block text-sm font-medium text-gray-700">Location</label>
-                    <input type="text" name="location" id="edit_location" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    <label for="edit-location" class="block text-sm font-medium text-gray-700 text-left">Location</label>
+                    <input type="text" name="location" id="edit-location" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                 </div>
                 
                 <div class="mb-4">
-                    <label for="edit_capacity" class="block text-sm font-medium text-gray-700">Capacity (if applicable)</label>
-                    <input type="number" name="capacity" id="edit_capacity" min="1" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    <label for="edit-capacity" class="block text-sm font-medium text-gray-700 text-left">Capacity (if applicable)</label>
+                    <input type="number" name="capacity" id="edit-capacity" min="1" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                 </div>
                 
                 <div class="mb-4">
-                    <label for="edit_status" class="block text-sm font-medium text-gray-700">Status</label>
-                    <select name="status" id="edit_status" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <label for="edit-status" class="block text-sm font-medium text-gray-700 text-left">Status</label>
+                    <select name="status" id="edit-status" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                         <option value="available">Available</option>
                         <option value="maintenance">Maintenance</option>
                         <option value="inactive">Inactive</option>
                     </select>
                 </div>
-            </div>
-            
-            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button type="submit" name="update_resource" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
-                    Save Changes
-                </button>
-                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="closeEditModal()">
-                    Cancel
-                </button>
-            </div>
-        </form>
+                
+                <div class="mb-4">
+                    <label for="edit-image" class="block text-sm font-medium text-gray-700 text-left">Resource Image</label>
+                    <div id="current-image-container" class="my-2 flex justify-center">
+                        <!-- Current image will be shown here by JavaScript -->
+                    </div>
+                    <input type="file" name="image" id="edit-image" accept="image/*" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    <p class="mt-1 text-xs text-gray-500 text-left">Upload a new image to replace the current one. Leave empty to keep current image.</p>
+                </div>
+                
+                <div class="flex items-center justify-between mt-6">
+                    <button type="button" onclick="closeEditModal()" class="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Cancel
+                    </button>
+                    <button type="submit" name="update_resource" class="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
-    function openEditModal(id, categoryId, name, description, location, capacity, status) {
-        document.getElementById('edit_id').value = id;
-        document.getElementById('edit_category_id').value = categoryId;
-        document.getElementById('edit_name').value = name;
-        document.getElementById('edit_description').value = description;
-        document.getElementById('edit_location').value = location;
-        document.getElementById('edit_capacity').value = capacity !== null ? capacity : '';
-        document.getElementById('edit_status').value = status;
-        document.getElementById('editModal').classList.remove('hidden');
+function openEditModal(id, category_id, name, description, location, capacity, status, image_path) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-category_id').value = category_id;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-description').value = description;
+    document.getElementById('edit-location').value = location;
+    document.getElementById('edit-capacity').value = capacity ? capacity : '';
+    document.getElementById('edit-status').value = status;
+    
+    // Display current image if it exists
+    const currentImageContainer = document.getElementById('current-image-container');
+    currentImageContainer.innerHTML = '';
+    
+    if (image_path && image_path !== 'null' && image_path !== '') {
+        const img = document.createElement('img');
+        img.src = '../' + image_path;
+        img.alt = name;
+        img.className = 'h-32 w-auto rounded object-cover';
+        currentImageContainer.appendChild(img);
+    } else {
+        const noImg = document.createElement('div');
+        noImg.className = 'h-32 w-32 bg-gray-200 rounded flex items-center justify-center';
+        noImg.innerHTML = '<i class="fas fa-image text-gray-400 text-3xl"></i>';
+        currentImageContainer.appendChild(noImg);
     }
     
-    function closeEditModal() {
-        document.getElementById('editModal').classList.add('hidden');
+    document.getElementById('editResourceModal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('editResourceModal').classList.add('hidden');
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('editResourceModal');
+    if (event.target === modal) {
+        closeEditModal();
     }
-    
-    // Close modal when clicking outside
-    document.getElementById('editModal').addEventListener('click', function(event) {
-        if (event.target === this) {
-            closeEditModal();
-        }
-    });
+});
 </script>
 
 <?php include '../includes/footer.php'; ?> 

@@ -210,4 +210,65 @@ function generatePagination($current_page, $total_pages, $url_pattern) {
             </div>';
     
     return $html;
+}
+
+/**
+ * Handle file upload for resource images
+ * 
+ * @param array $file The uploaded file ($_FILES['image'])
+ * @return array|bool Returns array with 'path' and 'error' on success or error, or false if no file
+ */
+function handleResourceImageUpload($file) {
+    // If no file uploaded or error occurred
+    if (!isset($file) || $file['error'] == UPLOAD_ERR_NO_FILE) {
+        return false;
+    }
+    
+    // Check for upload errors
+    if ($file['error'] != UPLOAD_ERR_OK) {
+        $error_messages = [
+            UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini',
+            UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form',
+            UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload'
+        ];
+        
+        $error_message = isset($error_messages[$file['error']]) 
+            ? $error_messages[$file['error']] 
+            : 'Unknown upload error';
+            
+        return ['path' => null, 'error' => $error_message];
+    }
+    
+    // Check file type
+    $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!in_array($file['type'], $allowed_types)) {
+        return ['path' => null, 'error' => 'Only JPG, PNG, GIF, and WEBP image files are allowed'];
+    }
+    
+    // Check file size (5MB max)
+    $max_size = 5 * 1024 * 1024; // 5MB in bytes
+    if ($file['size'] > $max_size) {
+        return ['path' => null, 'error' => 'Image file size must be less than 5MB'];
+    }
+    
+    // Create upload directory if it doesn't exist
+    $upload_dir = __DIR__ . '/../uploads/resources/';
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0755, true);
+    }
+    
+    // Generate unique filename
+    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $unique_name = uniqid('resource_') . '.' . $extension;
+    $upload_path = $upload_dir . $unique_name;
+    
+    // Move uploaded file
+    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+        return ['path' => 'uploads/resources/' . $unique_name, 'error' => null];
+    } else {
+        return ['path' => null, 'error' => 'Failed to move uploaded file'];
+    }
 } 
